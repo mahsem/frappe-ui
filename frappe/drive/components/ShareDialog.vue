@@ -7,26 +7,11 @@
           <div class="font-semibold text-2xl flex text-nowrap overflow-hidden">
             Sharing "
             <div class="truncate max-w-[80%]">
-              {{ entity?.title }}
+              {{ entity?.file_name }}
             </div>
             "
           </div>
           <div class="ml-auto flex gap-2">
-            <Button
-              v-if="!advanced"
-              class="text-sm"
-              variant="ghost"
-              :icon="h(LucideSettings, { class: 'size-4' })"
-              @click="advanced = true"
-            />
-            <Button
-              v-else
-              variant="ghost"
-              class="flex text-sm gap-1 items-center mb-3 cursor-pointer"
-              label="Back"
-              :icon-left="h(LucideArrowLeft, { class: 'size-4' })"
-              @click="advanced = false"
-            />
             <Button class="shrink-0" variant="ghost" @click="open = false">
               <template #icon>
                 <LucideX class="size-4" />
@@ -34,10 +19,7 @@
             </Button>
           </div>
         </div>
-        <div v-if="advanced">
-          <Switch v-model="allowDownload" label="Allow download" />
-        </div>
-        <div v-else>
+        <div>
           <!-- General section -->
           <div class="border-b pb-4 mb-4">
             <div class="mb-2 text-ink-gray-5 font-medium text-base">
@@ -88,11 +70,7 @@
               v-model:options="filteredUsers"
               :render-icon="
                 (k) =>
-                  h(Avatar, {
-                    image: k.user_image,
-                    label: k.value,
-                    size: 'xs',
-                  })
+                  h(Avatar, { image: k.user_image, label: k.value, size: 'xs' })
               "
               placeholder="Add people..."
             />
@@ -220,9 +198,7 @@ import LucideLink2 from '~icons/lucide/link-2'
 const open = defineModel()
 const props = defineProps({
   entity: Object,
-  users: {
-    default: allUsers,
-  },
+  users: { default: allUsers },
   usersWithAccess: { default: usersWithAccess },
   updateAccess: { default: updateAccess },
 })
@@ -268,10 +244,7 @@ const chosenTeam = ref()
 
 const getGeneralAccess = createResource({
   url: 'drive.api.permissions.get_user_access',
-  makeParams: (params) => ({
-    ...params,
-    entity: props.entity.name,
-  }),
+  makeParams: (params) => ({ ...params, entity: props.entity.name }),
   onSuccess: (data) => {
     if (!data || !data.read) {
       if (getGeneralAccess.params.user === 'Guest')
@@ -341,11 +314,7 @@ watch(
 const addPermissions = () => {
   const access = getAccess(accessToAdd.value)
   for (const user of usersToAdd.value) {
-    const r = {
-      entity_name: props.entity.name,
-      user,
-      ...access,
-    }
+    const r = { entity_name: props.entity.name, user, ...access }
     props.updateAccess.submit(r)
     props.usersWithAccess.data.push({
       ...filteredUsers.value.find((k) => k.value === user),
@@ -367,11 +336,7 @@ const updatePermissions = (user, val, entity_name, idx) => {
   }
   const access = getAccess(val)
   Object.assign(user, access)
-  props.updateAccess.submit({
-    entity_name,
-    user: user.user,
-    ...access,
-  })
+  props.updateAccess.submit({ entity_name, user: user.user, ...access })
 }
 
 // Util functions
@@ -381,17 +346,5 @@ const getAccess = (val) => ({
   upload: val === 'upload' || val === 'editor' ? 1 : 0,
   share: val === 'editor' ? 1 : 0,
   write: val === 'editor' ? 1 : 0,
-})
-
-// Advanced section
-const advanced = ref(false)
-const allowDownload = ref(props.entity.allow_download)
-watch(allowDownload, (v) => {
-  props.entity.allow_download = v
-  createResource({
-    url: 'drive.api.permissions.toggle_allow_download',
-    params: { entity: props.entity.name, val: v },
-    auto: true,
-  })
 })
 </script>

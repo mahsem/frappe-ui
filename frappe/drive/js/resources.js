@@ -2,9 +2,7 @@ import { createResource, toast } from '../../../src'
 import { prettyData } from '../js/utils'
 export const getTeams = createResource({
   url: 'drive.api.permissions.get_teams',
-  params: {
-    details: 1,
-  },
+  params: { details: 1 },
   method: 'GET',
   cache: 'teams',
 })
@@ -12,7 +10,7 @@ export const getTeams = createResource({
 const COMMON_OPTIONS = {
   debounce: 500,
   transform(data) {
-    return prettyData(data.filter((k) => !k.title.startsWith('.')))
+    return prettyData(data.filter((k) => !k.file_name.startsWith('.')))
   },
 }
 
@@ -32,23 +30,19 @@ export const updateMoved = (team, new_parent, special) => {
       cache: ['folder', new_parent],
     }).fetch()
   } else {
-    ;(move.params.is_private ? getPersonal : getTeam).fetch({ team })
+    ;(move.params.is_private ? getPersonal : getFiles).fetch({ team })
   }
 }
 
 export const move = createResource({
   url: 'drive.api.files.move',
   onSuccess(data) {
-    toast.success('Moved to ' + data.title, {
+    toast.success('Moved to ' + data.file_name, {
       action: {
         label: 'Go',
         onClick: () => {
-          if (!data.special)
-            openEntity({
-              name: data.name,
-              is_group: true,
-            })
-          else router.push({ name: data.title })
+          if (!data.special) openEntity({ name: data.name, is_folder: true })
+          else router.push({ name: data.file_name })
         },
       },
     })
@@ -83,14 +77,11 @@ export const allUsers = createResource({
   },
 })
 
-export const getTeam = createResource({
+export const getFiles = createResource({
   ...COMMON_OPTIONS,
   url: 'drive.api.list.files',
   makeParams: (params) => {
-    return {
-      ...params,
-      personal: 0,
-    }
+    return { ...params, personal: 0 }
   },
   cache: 'team-folder-contents',
 })
@@ -99,11 +90,9 @@ export const rename = createResource({
   url: 'drive.api.files.rename',
   method: 'POST',
   makeParams: (data) => {
-    return {
-      ...data,
-    }
+    return { ...data }
   },
   onError(error) {
-    toast.error(error)
+    toast.error(error.messages[0])
   },
 })

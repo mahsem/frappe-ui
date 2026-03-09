@@ -16,7 +16,7 @@ export function dynamicList(k) {
 
 export function getFileLink(entity, copy = true) {
   let link
-  if (entity.is_link) link = entity.path
+  if (entity.file_type === 'Link') link = entity.file_url
   else if (entity.mime_type === 'frappe/slides') {
     link = `${window.location.origin}/slides/presentation/${entity.name}`
   } else if (entity.mime_type === 'frappe_doc') {
@@ -37,15 +37,15 @@ function getLinkStem(entity) {
   return `${
     {
       true: 'f',
-      [new Boolean(entity.is_group)]: 'd',
+      [new Boolean(entity.is_folder)]: 'd',
       [new Boolean(entity.document || entity.mime_type === 'text/markdown')]:
         'w',
     }[true]
-  }/${entity.name}/${slugger(entity.title)}`
+  }/${entity.name}/${slugger(entity.file_name)}`
 }
 
-function slugger(title) {
-  return slugify(title.split('.').join(' '), {
+function slugger(file_name) {
+  return slugify(file_name.split('.').join(' '), {
     lower: true,
     trim: true,
     remove: /[^\w\s\']|_/,

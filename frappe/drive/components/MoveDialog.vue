@@ -10,7 +10,7 @@
             <template v-else>
               Moving "
               <div class="truncate max-w-[80%]">
-                {{ props.entities[0].title }}
+                {{ props.entities[0].file_name }}
               </div>
               "
             </template>
@@ -74,7 +74,7 @@
                         selected === node.value
                           ? 'bg-surface-gray-3'
                           : 'hover:bg-surface-gray-2',
-                        entities[0].parent_entity === node.value
+                        entities[0].folder === node.value
                           ? 'cursor-not-allowed hover:bg-surface-white'
                           : 'group',
                       ]"
@@ -97,7 +97,7 @@
                       <span v-else
                         >{{ node.label }}
                         <span
-                          v-if="entities[0].parent_entity === node.value"
+                          v-if="entities[0].folder === node.value"
                           class="text-ink-gray-5"
                           >(current)</span
                         ></span
@@ -177,7 +177,7 @@
                 </span>
                 <button
                   class="text-base cursor-pointer truncate max-w-20"
-                  :title="crumb.title"
+                  :title="crumb.file_name"
                   :class="
                     index === slicedBreadcrumbs.length - 1
                       ? 'text-ink-gray-9 text-base font-medium p-1'
@@ -185,7 +185,7 @@
                   "
                   @click="closeEntity(crumb.name)"
                 >
-                  {{ crumb.title }}
+                  {{ crumb.file_name }}
                 </button>
               </div>
             </div>
@@ -195,8 +195,7 @@
             class="ml-auto"
             size="sm"
             :disabled="
-              entities[0].parent_entity !== selected &&
-              chosenTeam === entities[0].team
+              entities[0].folder !== selected && chosenTeam === entities[0].team
             "
             :loading="move.loading"
             @click="moveFile"
@@ -237,11 +236,7 @@ import LucideArrowLeftRight from '~icons/lucide/arrow-left-right'
 import TeamSelector from './TeamSelector.vue'
 
 const props = defineProps({
-  entities: {
-    type: Object,
-    required: false,
-    default: null,
-  },
+  entities: { type: Object, required: false, default: null },
 })
 const emit = defineEmits(['success', 'complete'])
 
@@ -255,26 +250,18 @@ const tree = reactive({
   name: '',
   label: 'Home',
   children: [],
-  options: {
-    isCollapsed: true,
-  },
+  options: { isCollapsed: true },
 })
 
 // State variables
 const selected = ref('')
 const breadcrumbs = ref([
-  { name: '', title: tabIndex.value === 0 ? 'Home' : 'Team' },
+  { name: '', file_name: tabIndex.value === 0 ? 'Home' : 'Team' },
 ])
 
 const tabs = [
-  {
-    label: 'Home',
-    icon: h(LucideHome, { class: 'size-4' }),
-  },
-  {
-    label: 'Teams',
-    icon: h(LucideBuilding2, { class: 'size-4' }),
-  },
+  { label: 'Home', icon: h(LucideHome, { class: 'size-4' }) },
+  { label: 'Teams', icon: h(LucideBuilding2, { class: 'size-4' }) },
   // {
   //   label: "Favourites",
   //   icon: h(Star, { class: "size-4" }),
@@ -286,7 +273,7 @@ const folderContents = createResource({
   makeParams: (params) => ({
     ...params,
     team: chosenTeam.value,
-    is_active: 1,
+    status: 1,
     folders: 1,
   }),
 })
@@ -298,7 +285,7 @@ const fetchFolderContents = (tree, params = {}, nested = false) => {
       data.forEach((item) => {
         const node = reactive({
           ...item,
-          label: item.title,
+          label: item.file_name,
           value: item.name,
           children: [],
         })
@@ -318,17 +305,10 @@ const fetchFolderContents = (tree, params = {}, nested = false) => {
 
 const selectedPerms = createResource({
   url: 'drive.api.permissions.get_entity_with_permissions',
-  makeParams: () => ({
-    entity_name: selected.value,
-  }),
+  makeParams: () => ({ entity_name: selected.value }),
   onSuccess: (data) => {
     const team = getTeams.data[data.team]
-    const first = [
-      {
-        name: '',
-        title: team ? team.title : 'Home',
-      },
-    ]
+    const first = [{ name: '', file_name: team ? team.title : 'Home' }]
     breadcrumbs.value = first.concat(data.breadcrumbs.slice(1))
   },
 })
@@ -344,18 +324,15 @@ watch(
     switch (newValue) {
       case 0:
         chosenTeam.value = ''
-        breadcrumbs.value = [{ name: '', title: 'Home' }]
+        breadcrumbs.value = [{ name: '', file_name: 'Home' }]
         fetchFolderContents(tree)
         break
       case 1:
-        breadcrumbs.value = [{ name: '', title: getTeams.data[team].title }]
+        breadcrumbs.value = [{ name: '', file_name: getTeams.data[team].title }]
         fetchFolderContents(tree)
         break
       case 2:
-        folderContents.fetch({
-          entity_name: '',
-          favourites_only: true,
-        })
+        folderContents.fetch({ entity_name: '', favourites_only: true })
         break
     }
   },
@@ -376,7 +353,7 @@ const dropDownBreadcrumbs = computed(() => {
     return {
       ...item,
       icon: null,
-      label: item.title,
+      label: item.file_name,
       onClick: () => closeEntity(item.name),
     }
   })
@@ -387,13 +364,10 @@ const createdNode = ref(null)
 const createFolder = createResource({
   url: 'drive.api.files.create_folder',
   makeParams(params) {
-    return {
-      ...params,
-      team: chosenTeam.value,
-    }
+    return { ...params, team: chosenTeam.value }
   },
   validate(params) {
-    if (!params?.title) return false
+    if (!params?.file_name) return false
   },
   onSuccess(data) {
     createdNode.value.value = data.name
@@ -409,19 +383,17 @@ const createFolder = createResource({
 
 // Selection logic
 function openEntity(node) {
-  if (props.entities[0].parent_entity === node.value) return
+  if (props.entities[0].folder === node.value) return
   if (!node.value) {
     createdNode.value = node
     createFolder.fetch({
-      title: node.label,
+      file_name: node.label,
       personal: tabIndex.value === 0,
       parent: node.parent,
     })
   } else {
     selected.value = node.value
-    selectedPerms.fetch({
-      entity_name: selected.value,
-    })
+    selectedPerms.fetch({ entity_name: selected.value })
   }
 }
 

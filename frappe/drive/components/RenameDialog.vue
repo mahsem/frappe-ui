@@ -8,7 +8,7 @@
         {
           label: 'Confirm',
           variant: 'solid',
-          disabled: !newTitle || newTitle === entity.title,
+          disabled: !newTitle || newTitle === entity.file_name,
           onClick: submit,
         },
       ],
@@ -23,6 +23,7 @@
           class="grow"
           type="text"
           @keyup.enter="submit"
+          autocomplete="off"
         />
         <div
           v-if="file_ext"
@@ -50,9 +51,9 @@ const newTitle = ref('')
 const file_ext = ref('')
 
 if (props.entity.is_group || props.entity.document) {
-  newTitle.value = props.entity.title
+  newTitle.value = props.entity.file_name
 } else {
-  const parts = props.entity.title.split('.')
+  const parts = props.entity.file_name.split('.')
   if (parts.length > 1) {
     newTitle.value = parts.slice(0, -1).join('.')
     file_ext.value = parts[parts.length - 1]
@@ -64,13 +65,7 @@ if (props.entity.is_group || props.entity.document) {
 const submit = () => {
   const formattedTitle =
     newTitle.value + (file_ext.value ? '.' + file_ext.value : '')
-  rename.submit({
-    entity_name: props.entity.name,
-    new_title: formattedTitle,
-  })
-  emit('success', {
-    name: props.entity.name,
-    title: formattedTitle,
-  })
+  rename.submit({ entity_name: props.entity.name, new_title: formattedTitle })
+  emit('success', { name: props.entity.name, file_name: formattedTitle })
 }
 </script>
