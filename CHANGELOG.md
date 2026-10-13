@@ -1,5 +1,18 @@
 # frappe-ui
 
+## 1.0.2
+
+### Patch Changes
+
+- MobileShell: in an installed iOS 26 app, the tab bar now reaches the bottom
+  edge and clears the home indicator; `frappe-ui/style.css` now gives every
+  installed app with a translucent status bar a page at least as tall as the
+  screen, which is what restores the full-screen viewport (fix).
+  [#1289](https://github.com/frappe/frappe-ui/pull/1289)
+- Vite plugin: an app linked into a bench's `apps/` from another folder now
+  builds and runs in dev; tools such as Pilot set `FRAPPE_BENCH_PATH` to the
+  bench (fix). [#1283](https://github.com/frappe/frappe-ui/pull/1283)
+
 ## 1.0.1
 
 ### Patch Changes
